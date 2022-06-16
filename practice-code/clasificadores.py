@@ -7,13 +7,13 @@
 # --------------------------------------------------------------------------
 # Autor(a) del trabajo:
 #
-# APELLIDOS:
-# NOMBRE: 
+# APELLIDOS: Lorenz Vieta
+# NOMBRE: Germán
 #
 # Segundo componente (si se trata de un grupo):
 #
-# APELLIDOS:
-# NOMBRE:
+# APELLIDOS: Sáez Guerra
+# NOMBRE: Pilar
 # ----------------------------------------------------------------------------
 
 
@@ -56,23 +56,108 @@
 
 # Definir una clase NaiveBayes con la siguiente estructura:
 
-# class NaiveBayes():
+class NaiveBayes():
 
-#     def __init__(self,k=1):
-#                 
-#          .....
-         
-#     def entrena(self,X,y):
+    def __init__(self,k=1):
+        self.k = k
+        self.X = None
+        self.y = None
+        self.uniqueClas = None
+        self.p_c = []
+        self.list_p_condics = []
+        self.probabilidades_c = {}
+        
+    def entrena(self,X,y):
+        
+        self.X = X
+        self.y = y
+    
+        #countsClas nos da el nº de veces se da un valor de clasificación, uniqueClas los dos posibles valores de 
+        #clasificación ('si' y 'no')
+        uniqueClas, countsClas = np.unique(y, return_counts=True)
+        self.uniqueClas = uniqueClas
+    
+        #Función de probabilidad P(C=c)
+        p_c = []
+        for i in range(len(uniqueClas)):
+            p_c.append(countsClas[i]/len(y))
+            
+        self.p_c = p_c
+        
+        #Listado de probabilidades condicionales
+        list_p_condics = []
+        self.list_p_condics = list_p_condics
+        
+        for i in list(uniqueClas): #Por cada valor de clasificación ('si' o 'no'), vamos a añadir un registro en list_p_condics
+            p_condics =[] #Matriz para el valor de clasificación i
+            
+            for j in range(X.shape[1]): #Por cada atributo, vamos a calcular sus probabilidades condicionadas. 
+                                        #j es el nº de atributo 
+        
+                valuesAtribj, numberOfValuesAtribj = np.unique(X[:,j], return_counts=True)
+                p_condics_j = [] #Por cada atributo, tenemos la fila de las probabilidades condicionadas
+                
+                for k in range(len(valuesAtribj)): #Por cada valor que puede tomar el atributo,
+                                                   #vamos a calcular su probabilidad condicionada
+                    
+                    positionsOfk = np.where(X[:,j] == valuesAtribj[k]) #Posiciones en las que el atributo j vale k
+                    #Formamos el vector y con las posiciones en las que el clasificador vale i y el atributo j vale k
+                    y_k = []
+                    for l in positionsOfk: #Por cada valor de posición de k, nos quedamos con las posiciones de y, formamos y_k
+                        y_k.append(y[l])
+                        
+                    positionsOfk_i = np.where(y_k[0] == i) #Posiciones del valor de clasificación i en y
+                    y_ki = []
+                    for m in positionsOfk_i:
+                        y_ki.append(y_k[0][m])
+                        
+                    #Nº de ejemplos clasificados como i en el atributo j con valor k    
+                    n_i_j_k = len(y_ki[0])
+                    
+                    p_condics_j.append(n_i_j_k/countsClas[np.where(uniqueClas == i)][0])
+                    
+                p_condics.append(p_condics_j)
+            
+            list_p_condics.append(p_condics)
 
-#         ......
+    def clasifica_prob(self,ejemplo):
+        if (self.list_p_condics == []):
+            raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
+        else:
+                
+            #Por cada atributo de 'ejemplo', buscamos sus dos probabilidades condicionadas en la matriz construida
+            probabilidades_c = {}
+            
+            for c in list(self.uniqueClas):
+                posic_c = np.where(self.uniqueClas == c)[0][0]
+                
+                probs_condics = []
+                
+                for a in range(len(ejemplo)): #Por cada valor de los atributos, 
+                                              #sacamos su probabilidad condicionada de la lista construida
+                    matriz_p_c = self.list_p_condics[posic_c] #Matriz para el valor de clasificación actual
+                    valuesAtriba, numberOfValuesAtriba = np.unique(self.X[:,a], return_counts=True)
+                    fila = a #Corresponde al nº de atributo
+                    columna = np.where(valuesAtriba == ejemplo[a])[0][0] #Corresponde al valor del atributo
+                    probs_condics.append(matriz_p_c[fila][columna])
+                
+                producto = np.prod(probs_condics)
+                resultado = self.p_c[posic_c] * producto
+                probabilidades_c[c] = (resultado)
+                probs_condics = []
+                
+            self.probabilidades_c = probabilidades_c
+            return probabilidades_c
 
-#     def clasifica_prob(self,ejemplo):
-
-#         ......
-
-#     def clasifica(self,ejemplo):
-
-#         ......
+    def clasifica(self,ejemplo):
+        if (self.list_p_condics == []):
+            raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
+        else:
+            maximo = {}
+            find_max = max(self.probabilidades_c, key=self.probabilidades_c.get)
+            maximo[find_max] = self.probabilidades_c[find_max]
+        
+        return maximo
 
 
 # * El constructor recibe como argumento la constante k de suavizado (por
