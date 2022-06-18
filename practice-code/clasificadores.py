@@ -59,6 +59,9 @@
 class NaiveBayes():
 
     def __init__(self,k=1):
+        import math
+        import numpy as np
+        
         self.k = k
         self.X = None
         self.y = None
@@ -114,7 +117,7 @@ class NaiveBayes():
                     #Nº de ejemplos clasificados como i en el atributo j con valor k    
                     n_i_j_k = len(y_ki[0])
                     
-                    p_condics_j.append(n_i_j_k/countsClas[np.where(uniqueClas == i)][0])
+                    p_condics_j.append((n_i_j_k + self.k)/(countsClas[np.where(uniqueClas == i)][0] + self.k*len(valuesAtribj)))
                     
                 p_condics.append(p_condics_j)
             
@@ -133,16 +136,15 @@ class NaiveBayes():
                 
                 probs_condics = []
                 
-                for a in range(len(ejemplo)): #Por cada valor de los atributos, 
-                                              #sacamos su probabilidad condicionada de la lista construida
+                for a in range(len(ejemplo)): #Por cada valor de los atributos, sacamos su probabilidad condicionada de la matriz construida
                     matriz_p_c = self.list_p_condics[posic_c] #Matriz para el valor de clasificación actual
                     valuesAtriba, numberOfValuesAtriba = np.unique(self.X[:,a], return_counts=True)
                     fila = a #Corresponde al nº de atributo
                     columna = np.where(valuesAtriba == ejemplo[a])[0][0] #Corresponde al valor del atributo
                     probs_condics.append(matriz_p_c[fila][columna])
                 
-                producto = np.prod(probs_condics)
-                resultado = self.p_c[posic_c] * producto
+                sum_logs = np.sum([math.log(x,10) for x in probs_condics])
+                resultado = math.log(self.p_c[posic_c],10) + sum_logs
                 probabilidades_c[c] = (resultado)
                 probs_condics = []
                 
@@ -154,8 +156,8 @@ class NaiveBayes():
             raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
         else:
             maximo = {}
-            find_max = max(self.probabilidades_c, key=self.probabilidades_c.get)
-            maximo[find_max] = self.probabilidades_c[find_max]
+            find_max = max(self.clasifica_prob(ejemplo), key=self.clasifica_prob(ejemplo).get)
+            maximo[find_max] = self.clasifica_prob(ejemplo)[find_max]
         
         return maximo
 
@@ -202,6 +204,17 @@ class ClasificadorNoEntrenado(Exception): pass
 # >>> rendimiento(nb_tenis,X_tenis,y_tenis)
 # 0.9285714285714286
 
+def rendimiento(clasificador,X,y):
+    y_prediccion=[]
+    for x in X:
+        y_prediccion.append([k for k, v in clasificador.clasifica(x).items()][0])
+    total=len(y)
+    v_ok=[]
+    for i in range(len(y)):
+        if y[i]==y_prediccion[i]:
+            v_ok.append(i)
+    return len(v_ok)/len(y)
+
 # --------------------------
 # I.3) Aplicando Naive Bayes
 # --------------------------
@@ -220,8 +233,34 @@ class ClasificadorNoEntrenado(Exception): pass
 
 # Mostrar el proceso realizado en cada caso, y los rendimientos obtenidos. 
 
+from sklearn.model_selection import train_test_split
 
+#Prueba con fichero: Votos de congresistas US
 
+run "votos(1).py"
+
+X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(datos, clasif, test_size=0.25)
+nb_votos = NaiveBayes(k=0.5)
+nb_votos.entrena(X_votos_train,y_votos_train)
+rendimiento_votos=rendimiento(nb_votos,X_votos_test,y_votos_test)
+
+rendimiento_votos
+
+#0.8990825688073395
+
+#Prueba con fichero: Concesión de prestamos
+
+run "credito(1).py"
+
+#Prueba con fichero: Votos de congresistas US
+X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25)
+nb_credito = NaiveBayes(k=0.7)
+nb_credito.entrena(X_credito_train,y_credito_train)
+rendimiento_credito=rendimiento(nb_credito,X_credito_test,y_credito_test)
+
+rendimiento_credito
+
+#0.7361963190184049
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NOTA:
