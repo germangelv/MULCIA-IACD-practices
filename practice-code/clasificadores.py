@@ -2,6 +2,12 @@
 # Implementación de clasificadores 
 # Dpto. de C. de la Computación e I.A. (Univ. de Sevilla)
 # ===================================================================
+import sys
+import numpy as np
+import random
+import math
+
+# !{sys.executable} -m pip install numpy sklearn
 
 
 # --------------------------------------------------------------------------
@@ -58,10 +64,7 @@
 
 class NaiveBayes():
 
-    def __init__(self,k=1):
-        import math
-        import numpy as np
-        
+    def __init__(self,k=1):        
         self.k = k
         self.X = None
         self.y = None
@@ -204,8 +207,8 @@ class ClasificadorNoEntrenado(Exception): pass
 # >>> rendimiento(nb_tenis,X_tenis,y_tenis)
 # 0.9285714285714286
 
-def rendimiento(clasificador,X,y):
-    y_prediccion=[]
+def rendimiento_p1(clasificador,X,y):
+    y_prediccion = []
     for x in X:
         y_prediccion.append([k for k, v in clasificador.clasifica(x).items()][0])
     total=len(y)
@@ -214,6 +217,7 @@ def rendimiento(clasificador,X,y):
         if y[i]==y_prediccion[i]:
             v_ok.append(i)
     return len(v_ok)/len(y)
+
 
 # --------------------------
 # I.3) Aplicando Naive Bayes
@@ -237,28 +241,29 @@ from sklearn.model_selection import train_test_split
 
 #Prueba con fichero: Votos de congresistas US
 
-run "votos(1).py"
+# run "votos.py"
 
-X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(datos, clasif, test_size=0.25)
-nb_votos = NaiveBayes(k=0.5)
-nb_votos.entrena(X_votos_train,y_votos_train)
-rendimiento_votos=rendimiento(nb_votos,X_votos_test,y_votos_test)
+# X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(datos, clasif, test_size=0.25)
+# nb_votos = NaiveBayes(k=0.5)
+# nb_votos.entrena(X_votos_train,y_votos_train)
+# rendimiento_votos=rendimiento(nb_votos,X_votos_test,y_votos_test)
 
-rendimiento_votos
+# rendimiento_votos
 
 #0.8990825688073395
 
 #Prueba con fichero: Concesión de prestamos
 
-run "credito(1).py"
+# run "credito.py"
 
 #Prueba con fichero: Votos de congresistas US
-X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25)
-nb_credito = NaiveBayes(k=0.7)
-nb_credito.entrena(X_credito_train,y_credito_train)
-rendimiento_credito=rendimiento(nb_credito,X_credito_test,y_credito_test)
 
-rendimiento_credito
+# X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25)
+# nb_credito = NaiveBayes(k=0.7)
+# nb_credito.entrena(X_credito_train,y_credito_train)
+# rendimiento_credito=rendimiento(nb_credito,X_credito_test,y_credito_test)
+
+# rendimiento_credito
 
 #0.7361963190184049
 
@@ -452,11 +457,176 @@ rendimiento_credito
 # 0.972027972027972
 
 # -----------------------------------------------------------------
+from scipy.special import expit    
+
+
+def suma_paralelo(a1, a2):
+    """
+        Recibe dos arrays y devuelve un array con las sumas de sus componentes sumadas
+    """
+    a3 = [a1[i]+a2[i] for i in range(len(a1))]
+    return a3
+
+
+def sigmoide(x):
+    return expit(x)
+
+
+def normaliza(X):
+    """Normaliza los datos"""
+    medias = np.mean(X, axis=0)
+    desvs = np.std(X, axis=0)
+    X_norm = (X - medias) / desvs
+    return X_norm
+
+
+class RegresionLogisticaMiniBatch():
+
+    def __init__(self, clases=[0, 1], normalizacion=False,
+                rate=0.1, rate_decay=False, batch_tam=64, n_epochs=200,
+                 pesos_iniciales=None):
+        
+        mapa_reverse = {0: clases[0], 1: clases[1]}
+        self.clases = clases
+        self.mapa_reverse = mapa_reverse
+        self.normalizacion = normalizacion
+        self.rate = rate
+        self.rate_decay = rate_decay
+        self.batch_tam = batch_tam
+        self.n_epochs = n_epochs
+        self.pesos_iniciales = pesos_iniciales
+        self.pesos = list()
+        # si pesos está vacía, el clasificador no está entrenado
 
 
 
+    def entrena(self, X, y):
+        
+        pesos = []
+        if self.pesos_iniciales is not None:  # tomamos los pesos directamente de la clase
+            pesos = list(self.pesos_iniciales)
+        else:  # iniciamos los pesos de forma aleatoria
+            dims = X.shape
+            pesos = [random.random() for i in range(dims[1])]
+        n_epochs = self.n_epochs
+        y_2 = y.reshape(len(y), 1)
+
+        if self.normalizacion:
+            X = normaliza(X)
+                    
+        # merge de los array para trabajar mejor con ellos
+        big_chunk = np.concatenate((X, y_2), axis=1)
+        # inicialización de parámetros
+        batch_tam = self.batch_tam
+        tasa_l = self.rate
+        tasa_l0 = self.rate
+        for i in range(n_epochs):
+            chunks = np.array_split(big_chunk, batch_tam)
+            # dividimos los datos en subconjuntos
+            for block in chunks:
+                # tomamos un subgrupo de datos
+                # para cada subconjunto actualizamos
+                pesos_previos = [0.0 for _ in block[0][:-1]]
+                for array in block:
+                    sum_a = array[-1]-sigmoide(np.dot(pesos, array[:-1]))
+                    sum_t = np.dot(sum_a, array[:-1])
+                    pesos_previos = suma_paralelo(pesos_previos, sum_t)
+                # una vez hecho todo el sumatorio de los elementos del subgrupo,
+                # actualizamos los pesos reales multiplicando por la tasa de
+                # aprendizaje y sumando
+                
+                act_b = np.dot(tasa_l, pesos_previos)
+                pesos = suma_paralelo(pesos, act_b)
+            if self.rate_decay:
+                tasa_l = tasa_l0*(1/(1+i))
+        self.pesos = pesos
+
+    def clasifica_prob(self, ejemplo):
+        if not self.pesos:
+            raise ErrorClasificador("Clasificador no entrenado")
+        else:
+            result = sigmoide(np.dot(self.pesos, ejemplo))
+            probs = dict()
+            reverse= self.mapa_reverse
+            probs[reverse.get(0)]=1-result
+            probs[reverse.get(1)]=result
+            return probs
+
+    def clasifica(self, ejemplo):
+        if not self.pesos:
+            raise ErrorClasificador("Clasificador no entrenado")
+        else:
+            result = sigmoide(np.dot(self.pesos, ejemplo))
+            return self.mapa_reverse.get(round(result))
 
 
+def particion_entr_prueba(X, y, test=0.20):
+    
+    classes = list(set(y))
+    
+    '''
+    obtenemos un array completo de los datos con su correspondiente clase.
+    una vez creado esto, por cada clase posible vamos creando dos grupos,
+    uno de test y otro de entrenamiento, siguiendo la proporción. Para ello,
+    nos vamos a valer de random.shuffle y slice
+    '''
+    completedata = np.concatenate((X, y.reshape(len(y), 1)), axis=1)
+    x_e = []
+    x_t = []
+    for c in classes:
+        filtereddata = []
+        for element in completedata:
+            if element[-1] == c:
+                filtereddata.append(element)
+        # tenemos todos los datos filtrados para una clase c
+        # mezclamos cada uno de los datos
+        random.shuffle(filtereddata)
+        # dividimos en entrenamiento y prueba
+        longitud= len(filtereddata)
+        i_seccion=int((1-test)*longitud)
+        x_e += filtereddata[:i_seccion]
+        x_t += filtereddata[i_seccion:]
+
+    #una vez que tenemos todas las listas terminadas, las convertimos a array
+    #y procedemos a dividir cada parte en x_t,x_e,y_t e y_e
+    x_e= np.array(x_e)
+    x_t= np.array(x_t)
+
+    x_e_d = x_e[:, :-1]
+    y_e = x_e[:, -1]
+    x_t_d = x_t[:, :-1]
+    y_t = x_t[:, -1]
+    return x_e_d, x_t_d, y_e, y_t
+
+
+def rendimiento_p2(clasificador, X, y):
+    """
+    Devuelve el porcentaje de ejemplos bien clasificados
+    :param clasificador: clasificador a emplear
+    :param X: conjunto de ejemplos X
+    :param y: clasificacion esperada
+    """
+    pred = []  # tablero que contenga nuestra prediccion para todos los ejemplos en X con el clasificador dado en argumento
+    for i in range(len(X)):
+        pred.append(clasificador.clasifica(X[i]))
+    return len(np.where(pred == y)[0]) / len(X)
+
+
+# from sklearn.datasets import load_breast_cancer
+
+# cancer=load_breast_cancer()
+
+# X_cancer,y_cancer=cancer.data, cancer.target
+
+# Xe_cancer, Xp_cancer, ye_cancer, yp_cancer = particion_entr_prueba(carga_datos.X_cancer,carga_datos.y_cancer)
+
+# lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
+
+# lr_cancer.entrena(Xe_cancer,ye_cancer,10000)      
+
+# print("Test Regresion logistica sobre los datos del cancer.")
+# print("Rendimiento:")
+# rendimiento(lr_cancer, normaliza(Xe_cancer), ye_cancer)
 
 
 # -----------------------------------

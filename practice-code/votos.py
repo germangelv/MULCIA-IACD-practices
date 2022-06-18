@@ -1,23 +1,27 @@
 # Datos sobre votos de cada uno de los 435 congresitas de Estados
-# Unidos en 17 votaciones realizadas durante 1984, clasificados según su
+# Unidos en 17 votaciones realizadas durante 1984, clasificados segï¿½n su
 # partido (republicano o demÃ³crata). 
 
 # Tomado y adaptado de 
 # http://archive.ics.uci.edu/ml/datasets/Congressional+Voting+Records
 
-# El valor de cada votación lo codificamos numÃ©ricamente 
+# El valor de cada votaciï¿½n lo codificamos numÃ©ricamente 
 # de la siguiente manera: 
 
-# 1: voto sí
+# 1: voto sï¿½
 # -1: voto no
-# 0: "Present" (similar a la abstención)
+# 0: "Present" (similar a la abstenciï¿½n)
 
 # El partido lo codificamos de la siguiente manera:
 
 # 0: republicano
-# 1: demócrata
+# 1: demï¿½crata
 
 import numpy as np
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
+from clasificadores import NaiveBayes
+from clasificadores import rendimiento_p1
 
 datos=np.array(
            [[-1,1,-1,1,1,1,-1,-1,-1,1,0,1,1,1,-1,1],
@@ -478,3 +482,9 @@ clasif=np.array([0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 
                      1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1,
                      1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0])
 
+
+X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(datos, clasif, test_size=0.25)
+nb_votos = NaiveBayes(k=0.5)
+nb_votos.entrena(X_votos_train,y_votos_train)
+
+print("Rendimiento: ",rendimiento_p1(nb_votos,X_votos_test,y_votos_test))

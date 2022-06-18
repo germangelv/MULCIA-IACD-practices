@@ -16,6 +16,12 @@
 # Las variables X_credito,y_credito definidas al final contiene los datos en
 # formato adecuado para las implementaciones que se piden. 
 
+import numpy as np
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
+from clasificadores import NaiveBayes
+from clasificadores import rendimiento_p1
+
 
 datos_con_la_clase=[['jubilado','ninguno','ninguna','uno','soltero','altos','estudiar'],
       ['funcionario','dos o más','ninguna','uno','viudo','bajos','no conceder'],
@@ -670,5 +676,12 @@ datos_con_la_clase=[['jubilado','ninguno','ninguna','uno','soltero','altos','est
 
 
 
-X_credito=np.array([d[:-1] for d in credito.datos_con_la_clase])
-y_credito=np.array([d[-1] for d in credito.datos_con_la_clase])
+X_credito=np.array([d[:-1] for d in datos_con_la_clase])
+y_credito=np.array([d[-1] for d in datos_con_la_clase])
+
+
+X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25)
+nb_credito = NaiveBayes(k=0.7)
+nb_credito.entrena(X_credito_train,y_credito_train)
+
+print("Rendimiento: ", rendimiento_p1(nb_credito,X_credito_test,y_credito_test))
