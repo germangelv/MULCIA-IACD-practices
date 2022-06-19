@@ -483,7 +483,7 @@ clasif=np.array([0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 
                      1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0])
 
 
-X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(datos, clasif, test_size=0.25)
+X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(datos, clasif, test_size=0.25, random_state=10)
 nb_votos = NaiveBayes(k=0.5)
 nb_votos.entrena(X_votos_train,y_votos_train)
 

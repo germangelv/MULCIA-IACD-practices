@@ -7,6 +7,19 @@ import numpy as np
 import random
 import math
 
+# Importamos los datos que vamos a usar en los ejemplos posteriores.
+
+#from votos import datos as X_votos
+#from votos import clasif as y_votos
+
+#from credito import X_credito
+#from credito import y_credito
+
+from sklearn.datasets import load_iris
+iris=load_iris()
+X_iris=iris.data
+y_iris=iris.target
+
 # !{sys.executable} -m pip install numpy sklearn
 
 
@@ -543,7 +556,7 @@ class RegresionLogisticaMiniBatch():
 
     def clasifica_prob(self, ejemplo):
         if not self.pesos:
-            raise ErrorClasificador("Clasificador no entrenado")
+            raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
         else:
             result = sigmoide(np.dot(self.pesos, ejemplo))
             probs = dict()
@@ -554,7 +567,7 @@ class RegresionLogisticaMiniBatch():
 
     def clasifica(self, ejemplo):
         if not self.pesos:
-            raise ErrorClasificador("Clasificador no entrenado")
+            raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
         else:
             result = sigmoide(np.dot(self.pesos, ejemplo))
             return self.mapa_reverse.get(round(result))
@@ -728,6 +741,40 @@ def rendimiento_p2(clasificador, X, y):
 # >>> 0.9736842105263158
 # --------------------------------------------------------------------
 
+class RL_OvR():
+
+     def __init__(self, clases, rate=0.1, rate_decay=False, batch_tam=64, n_epochs=200):
+         self.clases = clases
+         self.rate = rate
+         self.rate_decay = rate_decay
+         self.batch_tam = batch_tam
+         self.n_epochs = n_epochs
+         self.pesos = list()
+         self.reg = list()
+         # si pesos está vacía, el clasificador no está entrenado
+
+     def entrena(self, X, y):
+        for i in range(len(self.clases)):
+            self.reg.append(RegresionLogisticaMiniBatch(clases=[0, 1], normalizacion=False, rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam, n_epochs=self.n_epochs,pesos_iniciales=None))
+            y_new = np.array([1 if j == self.clases[i] else 0 for j in y])
+            self.reg[i].entrena(X, y_new)
+
+     def clasifica(self, ejemplo):
+         prob = []
+         for i in range(len(self.clases)):
+            prob.append(self.reg[i].clasifica_prob(ejemplo)[1])
+         return self.clases[np.argmax(prob)]
+
+print("Test One vs Rest con los datos iris.")
+#
+X_iris_train, X_iris_test, y_iris_train, y_iris_test = train_test_split(X_iris, y_iris, test_size=0.25, random_state=10)
+#
+rl_iris = RL_OvR([0, 1, 2], rate=0.001, batch_tam=20, n_epochs=1000)
+#
+rl_iris.entrena(X_iris_train, y_iris_train)
+#
+print("Rendimiento:", rendimiento_p2(rl_iris, X_iris_test, y_iris_test), "\n")
+#print("-------------------------------------")
 
 # ------------------------------------------------------------
 # III.2) Clasificación de imágenes de dígitos escritos a mano
@@ -756,3 +803,59 @@ def rendimiento_p2(clasificador, X, y):
 # rate_decay para tratar de obtener un rendimiento aceptable (por encima del
 # 75% de aciertos sobre test). 
 
+def leer_digitos(fichero):
+    """
+    Lee un fichero que nos da imagenes de 28x29 pixeles representando digitos.
+    Devuelve un array numpy que contenga la representacion de los digitos de este fichero.
+    """
+    f = open(fichero)
+    count = 0
+    datos = []
+    imagen = []
+    for linea in f:
+        transform_linea = [0 if c == " " else 1 for c in linea]
+        imagen.append(transform_linea)
+        count += 1
+        if count == 28:
+            count = 0
+            datos.append(imagen)
+            imagen = []
+    f.close()
+    return np.array(datos)
+
+
+def leer_label(fichero):
+    f = open(fichero)
+    labels = []
+    for l in f:
+        labels.append(int(l))
+    f.close()
+    return np.array(labels)
+
+
+#Xtrain_digitos = leer_digitos("datos/trainingimages").reshape(5000, 28*29)[0:500]
+#ytrain_digitos = leer_label("datos/traininglabels")[0:600]
+#
+#Xtest_digitos = leer_digitos("datos/testimages").reshape(1000, 28*29)
+#ytest_digitos = leer_label("datos/testlabels")
+#
+#Xval_digitos = leer_digitos("datos/validationimages").reshape(1000, 28*29)
+#yval_digitos = leer_label("datos/validationlabels")
+#
+#reg_digitos = RL_OvR(np.arange(10), rate=0.001, batch_tam=20, n_epochs=1000)
+#reg_digitos.entrena(Xtrain_digitos, ytrain_digitos)  # largo en tiempo = mas o menos 30 minutos para 500 datos
+#
+#print("RL con rate=0.001, batch_tam=20, n_epochs=1000)
+#print("Rendimento sobre los datos de entranamiento", rendimiento(reg_digitos, Xtrain_digitos, ytrain_digitos))
+## nos da 1 de rendimiento para los datos de entranamiento  -> sobreajuste
+#print("Rendimiento sobre los datos de test", rendimiento(reg_digitos, Xtest_digitos, ytest_digitos))
+## 0.79 de rendimiento para los datos de test
+#
+#reg_digitos = RL_OvR(np.arange(10), rate=0.3, batch_tam=50, n_epochs=100)
+#reg_digitos.entrena(Xtrain_digitos, ytrain_digitos)  # largo en tiempo = mas o menos 30 minutos para 500 datos
+#
+#print("RL con rate=0.3, batch_tam=256, n_epochs=950")
+#print("Rendimento sobre los datos de entranamiento", rendimiento(reg_digitos, Xtrain_digitos, ytrain_digitos))
+## nos da 1 de rendimiento para los datos de entranamiento -> sobreajuste
+#print("Rendimiento sobre los datos de test", rendimiento(reg_digitos, Xtest_digitos, ytest_digitos))
+## 0.802 de rendimiento para los datos de test

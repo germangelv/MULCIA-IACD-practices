@@ -680,7 +680,7 @@ X_credito=np.array([d[:-1] for d in datos_con_la_clase])
 y_credito=np.array([d[-1] for d in datos_con_la_clase])
 
 
-X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25)
+X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25, random_state=10)
 nb_credito = NaiveBayes(k=0.7)
 nb_credito.entrena(X_credito_train,y_credito_train)
 
