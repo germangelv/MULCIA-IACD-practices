@@ -4,17 +4,15 @@
 # ===================================================================
 import sys
 import numpy as np
+import argparse
 import random
 import math
 
 # Importamos los datos que vamos a usar en los ejemplos posteriores.
-
-#from votos import datos as X_votos
-#from votos import clasif as y_votos
-
-#from credito import X_credito
-#from credito import y_credito
-
+from votos import datos as X_votos
+from votos import clasif as y_votos
+from credito import datos_con_la_clase
+from sklearn.datasets import load_breast_cancer
 from sklearn.datasets import load_iris
 iris=load_iris()
 X_iris=iris.data
@@ -50,7 +48,7 @@ y_iris=iris.target
 
 
 # IMPORTANTE: NO CAMBIAR EL NOMBRE NI A ESTE ARCHIVO NI A LAS CLASES, MÉTODOS
-# Y ATRIBUTOS QUE SE PIDEN. EN PARCTICULAR: NO HACERLO EN UN NOTEBOOK.
+# Y ATRIBUTOS QUE SE PIDEN. EN PARTICULAR: NO HACERLO EN UN NOTEBOOK.
 
 # NOTAS: 
 # * En este trabajo NO se permite usar Scikit Learn, EXCEPTO algunos métodos 
@@ -765,16 +763,6 @@ class RL_OvR():
             prob.append(self.reg[i].clasifica_prob(ejemplo)[1])
          return self.clases[np.argmax(prob)]
 
-print("Test One vs Rest con los datos iris.")
-#
-X_iris_train, X_iris_test, y_iris_train, y_iris_test = train_test_split(X_iris, y_iris, test_size=0.25, random_state=10)
-#
-rl_iris = RL_OvR([0, 1, 2], rate=0.001, batch_tam=20, n_epochs=1000)
-#
-rl_iris.entrena(X_iris_train, y_iris_train)
-#
-print("Rendimiento:", rendimiento_p2(rl_iris, X_iris_test, y_iris_test), "\n")
-#print("-------------------------------------")
 
 # ------------------------------------------------------------
 # III.2) Clasificación de imágenes de dígitos escritos a mano
@@ -859,3 +847,88 @@ def leer_label(fichero):
 ## nos da 1 de rendimiento para los datos de entranamiento -> sobreajuste
 #print("Rendimiento sobre los datos de test", rendimiento(reg_digitos, Xtest_digitos, ytest_digitos))
 ## 0.802 de rendimiento para los datos de test
+
+
+
+# Ejecucion con python clasificadores.py -t True
+# Ejecucion con python clasificadores.py -o True -t False
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--topic", help=" Para imprimir los resultados", default=True)
+    parser.add_argument("-o", "--optimize", help=" Para imprimir optimizacion y resultados segun modelos", default=False)
+    args = parser.parse_args()
+    
+    
+    if args.topic == "True":
+        # Ejemplo para imprimir resultado de Punto I.3 
+        
+        # Votos
+        print("----------------------------------") 
+        print("Test NaiveBayes con datos de Votos")
+        X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(X_votos, y_votos, test_size=0.25, random_state=10)
+        nb_votos = NaiveBayes(k=0.5)
+        nb_votos.entrena(X_votos_train,y_votos_train)
+        print("Rendimiento: ",rendimiento_p1(nb_votos,X_votos_test,y_votos_test))
+
+        # Creditos
+        print("------------------------------------") 
+        print("Test NaiveBayes con datos de Credito")
+        X_credito=np.array([d[:-1] for d in datos_con_la_clase])
+        y_credito=np.array([d[-1] for d in datos_con_la_clase])
+        X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25, random_state=10)
+        nb_credito = NaiveBayes(k=0.7)
+        nb_credito.entrena(X_credito_train,y_credito_train)
+        print("Rendimiento: ", rendimiento_p1(nb_credito,X_credito_test,y_credito_test))
+        
+        # Peliculas
+        
+        # Ejemplo para imprimir resultado de Punto II.1
+        print("----------------------------------------------------") 
+        print("Test Regresion logistica sobre los datos del cancer.")
+        cancer=load_breast_cancer()
+        X_cancer,y_cancer=cancer.data, cancer.target
+        Xe_cancer, Xp_cancer, ye_cancer, yp_cancer = particion_entr_prueba(X_cancer,y_cancer)
+        lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
+        lr_cancer.entrena(Xe_cancer, ye_cancer)
+        print("Rendimiento: ",rendimiento_p2(lr_cancer, normaliza(Xe_cancer), ye_cancer))
+        
+        # Ejemplo para imprimir resultado de Punto III.1
+        print("-------------------------------------") 
+        print("Test One vs Rest con los datos iris.")
+        X_iris_train, X_iris_test, y_iris_train, y_iris_test = train_test_split(X_iris, y_iris, test_size=0.25, random_state=10)
+        rl_iris = RL_OvR([0, 1, 2], rate=0.001, batch_tam=20, n_epochs=1000)
+        rl_iris.entrena(X_iris_train, y_iris_train)
+        print("Rendimiento:", rendimiento_p2(rl_iris, X_iris_test, y_iris_test), "\n")
+
+    if args.optimize == "True":
+        # Codigo mezclado de posible funcion de busqueda de maximo con 1 parametro.
+        # Habria que generalziar para N parametros, identificar y ajustar
+        result = []
+        band = False
+        for i in range(1,20):
+            # Prueba con skiti
+            # nb_votos = CategoricalNB(alpha=i/10)
+            # nb_votos.fit(X_votos_train,y_votos_train)
+            X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(X_votos, y_votos, test_size=0.25, random_state=10)
+            nb_votos = NaiveBayes(k=i/20)
+            nb_votos.entrena(X_votos_train, y_votos_train)
+            valor = rendimiento_p1(nb_votos, X_votos_test, y_votos_test)
+        
+            # Buscar maximo
+            if band == True and result[-1] < valor:
+                max = valor
+        
+            # primera vez
+            if band == False:
+                max = valor
+                band = True
+            # Guardo registros
+            result.append(valor)
+
+        for i in range(len(result)):
+            print("Rendimiento : "+str(result[i])+" con k = "+str((i+1)/10))
+            if max == result[i]:
+                print("El mejor rendimiento es de : "+str(max)+" con k = "+str((i+1)/10))
+        
+if __name__ == '__main__':
+    main()
