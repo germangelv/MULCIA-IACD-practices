@@ -9,6 +9,8 @@ import random
 import math
 
 # Importamos los datos que vamos a usar en los ejemplos posteriores.
+from jugar_tenis import X_tenis
+from jugar_tenis import y_tenis
 from votos import datos as X_votos
 from votos import clasif as y_votos
 from credito import datos_con_la_clase
@@ -595,44 +597,6 @@ class RegresionLogisticaMiniBatch():
             return self.mapa_reverse.get(round(result))
 
 
-def particion_entr_prueba(X, y, test=0.20):
-    
-    classes = list(set(y))
-    
-    '''
-    obtenemos un array completo de los datos con su correspondiente clase.
-    una vez creado esto, por cada clase posible vamos creando dos grupos,
-    uno de test y otro de entrenamiento, siguiendo la proporción. Para ello,
-    nos vamos a valer de random.shuffle y slice
-    '''
-    completedata = np.concatenate((X, y.reshape(len(y), 1)), axis=1)
-    x_e = []
-    x_t = []
-    for c in classes:
-        filtereddata = []
-        for element in completedata:
-            if element[-1] == c:
-                filtereddata.append(element)
-        # tenemos todos los datos filtrados para una clase c
-        # mezclamos cada uno de los datos
-        random.shuffle(filtereddata)
-        # dividimos en entrenamiento y prueba
-        longitud= len(filtereddata)
-        i_seccion=int((1-test)*longitud)
-        x_e += filtereddata[:i_seccion]
-        x_t += filtereddata[i_seccion:]
-
-    #una vez que tenemos todas las listas terminadas, las convertimos a array
-    #y procedemos a dividir cada parte en x_t,x_e,y_t e y_e
-    x_e= np.array(x_e)
-    x_t= np.array(x_t)
-
-    x_e_d = x_e[:, :-1]
-    y_e = x_e[:, -1]
-    x_t_d = x_t[:, :-1]
-    y_t = x_t[:, -1]
-    return x_e_d, x_t_d, y_e, y_t
-
 
 def rendimiento_p2(clasificador, X, y):
     """
@@ -821,11 +785,10 @@ def convierte_0_1(c):
     else:
         return 1
 
+# Esta función lee un fichero dado con imágenes de 28x29 pixeles que representan números y devuelve
+# un vector que representa los dígitos del fichero.
 def leer_digitos(fichero):
-    """
-    Lee un fichero que nos da imagenes de 28x29 pixeles representando digitos.
-    Devuelve un array numpy que contenga la representacion de los digitos de este fichero.
-    """
+
     f = open(fichero)
     count = 0
     datos = []
@@ -851,33 +814,6 @@ def leer_label(fichero):
     return np.array(labels)
 
 
-#Xtrain_digitos = leer_digitos("datos/trainingimages").reshape(5000, 28*29)[0:500]
-#ytrain_digitos = leer_label("datos/traininglabels")[0:600]
-#
-#Xtest_digitos = leer_digitos("datos/testimages").reshape(1000, 28*29)
-#ytest_digitos = leer_label("datos/testlabels")
-#
-#Xval_digitos = leer_digitos("datos/validationimages").reshape(1000, 28*29)
-#yval_digitos = leer_label("datos/validationlabels")
-#
-#reg_digitos = RL_OvR(np.arange(10), rate=0.001, batch_tam=20, n_epochs=1000)
-#reg_digitos.entrena(Xtrain_digitos, ytrain_digitos)  # largo en tiempo = mas o menos 30 minutos para 500 datos
-#
-#print("RL con rate=0.001, batch_tam=20, n_epochs=1000)
-#print("Rendimento sobre los datos de entranamiento", rendimiento(reg_digitos, Xtrain_digitos, ytrain_digitos))
-## nos da 1 de rendimiento para los datos de entranamiento  -> sobreajuste
-#print("Rendimiento sobre los datos de test", rendimiento(reg_digitos, Xtest_digitos, ytest_digitos))
-## 0.79 de rendimiento para los datos de test
-#
-#reg_digitos = RL_OvR(np.arange(10), rate=0.3, batch_tam=50, n_epochs=100)
-#reg_digitos.entrena(Xtrain_digitos, ytrain_digitos)  # largo en tiempo = mas o menos 30 minutos para 500 datos
-#
-#print("RL con rate=0.3, batch_tam=256, n_epochs=950")
-#print("Rendimento sobre los datos de entranamiento", rendimiento(reg_digitos, Xtrain_digitos, ytrain_digitos))
-## nos da 1 de rendimiento para los datos de entranamiento -> sobreajuste
-#print("Rendimiento sobre los datos de test", rendimiento(reg_digitos, Xtest_digitos, ytest_digitos))
-## 0.802 de rendimiento para los datos de test
-
 # Ejecucion con python clasificadores.py -t True
 # Ejecucion con python clasificadores.py -o True -t False
 def main():
@@ -889,7 +825,18 @@ def main():
     
     if args.topic == "True":
         # Ejemplo para imprimir resultado de Punto I.3 
-        
+
+        # Tenis
+        print("----------------------------------") 
+        print("Test NaiveBayes con datos de Jugar al tenis")
+        nb_tenis = NaiveBayes(k=0.5)
+        nb_tenis.entrena(X_tenis,y_tenis)
+        #ej_tenis=np.array(['Soleado','Baja','Alta','Fuerte'])
+        #nb_tenis.clasifica_prob(ej_tenis)
+        #nb_tenis.clasifica(ej_tenis)
+        print("Rendimiento: ",rendimiento_p1(nb_tenis,X_tenis,y_tenis))
+        # Rendimiento:  
+
         # Votos
         print("----------------------------------") 
         print("Test NaiveBayes con datos de Votos")
