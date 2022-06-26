@@ -85,6 +85,7 @@ class NaiveBayes():
         self.p_c = []
         self.list_p_condics = []
         self.probabilidades_c = {}
+        self.flag_entrenado = False
         
     def entrena(self,X,y):
         
@@ -138,9 +139,10 @@ class NaiveBayes():
                 p_condics.append(p_condics_j)
             
             list_p_condics.append(p_condics)
+            self.flag_entrenado = True
 
     def clasifica_prob(self,ejemplo):
-        if (self.list_p_condics == []):
+        if (self.flag_entrenado == False):
             raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
         else:
                 
@@ -168,7 +170,7 @@ class NaiveBayes():
             return probabilidades_c
 
     def clasifica(self,ejemplo):
-        if (self.list_p_condics == []):
+        if (self.flag_entrenado == False):
             raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
         else:
             maximo = {}
@@ -220,7 +222,7 @@ class ClasificadorNoEntrenado(Exception): pass
 # >>> rendimiento(nb_tenis,X_tenis,y_tenis)
 # 0.9285714285714286
 
-def rendimiento_p1(clasificador,X,y):
+def rendimiento(clasificador,X,y):
     y_prediccion = []
     for x in X:
         y_prediccion.append([k for k, v in clasificador.clasifica(x).items()][0])
@@ -252,33 +254,7 @@ def rendimiento_p1(clasificador,X,y):
 
 from sklearn.model_selection import train_test_split
 
-#Prueba con fichero: Votos de congresistas US
-
-# run "votos.py"
-
-# X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(datos, clasif, test_size=0.25)
-# nb_votos = NaiveBayes(k=0.5)
-# nb_votos.entrena(X_votos_train,y_votos_train)
-# rendimiento_votos=rendimiento(nb_votos,X_votos_test,y_votos_test)
-
-# rendimiento_votos
-
-#0.8990825688073395
-
-#Prueba con fichero: Concesión de prestamos
-
-# run "credito.py"
-
-#Prueba con fichero: Votos de congresistas US
-
-# X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25)
-# nb_credito = NaiveBayes(k=0.7)
-# nb_credito.entrena(X_credito_train,y_credito_train)
-# rendimiento_credito=rendimiento(nb_credito,X_credito_test,y_credito_test)
-
-# rendimiento_credito
-
-#0.7361963190184049
+# Creamos una función para buscar el parámetro que optimiza el rendimiento de Naive Bayes.
 
 def optimizar_nb(X,y):
     result = []
@@ -287,7 +263,7 @@ def optimizar_nb(X,y):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=10)
         nb = NaiveBayes(k=i/20)
         nb.entrena(X_train, y_train)
-        valor = rendimiento_p1(nb, X_test, y_test)
+        valor = rendimiento(nb, X_test, y_test)
    
        # Buscar maximo
         if band == True and result[-1] < valor:
@@ -499,9 +475,7 @@ from scipy.special import expit
 
 
 def suma_paralelo(a1, a2):
-    """
-        Recibe dos arrays y devuelve un array con las sumas de sus componentes sumadas
-    """
+
     a3 = [a1[i]+a2[i] for i in range(len(a1))]
     return a3
 
@@ -511,7 +485,7 @@ def sigmoide(x):
 
 
 def normaliza(X):
-    """Normaliza los datos"""
+
     medias = np.mean(X, axis=0)
     desvs = np.std(X, axis=0)
     X_norm = (X - medias) / desvs
@@ -534,7 +508,7 @@ class RegresionLogisticaMiniBatch():
         self.n_epochs = n_epochs
         self.pesos_iniciales = pesos_iniciales
         self.pesos = list()
-        # si pesos está vacía, el clasificador no está entrenado
+        self.flag_entrenado = False
 
 
 
@@ -577,9 +551,10 @@ class RegresionLogisticaMiniBatch():
             if self.rate_decay:
                 tasa_l = tasa_l0*(1/(1+i))
         self.pesos = pesos
+        self.flag_entrenado = True
 
     def clasifica_prob(self, ejemplo):
-        if not self.pesos:
+        if self.flag_entrenado == False:
             raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
         else:
             result = sigmoide(np.dot(self.pesos, ejemplo))
@@ -590,42 +565,14 @@ class RegresionLogisticaMiniBatch():
             return probs
 
     def clasifica(self, ejemplo):
-        if not self.pesos:
+        if self.flag_entrenado == False:
             raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
         else:
-            result = sigmoide(np.dot(self.pesos, ejemplo))
-            return self.mapa_reverse.get(round(result))
-
-
-
-def rendimiento_p2(clasificador, X, y):
-    """
-    Devuelve el porcentaje de ejemplos bien clasificados
-    :param clasificador: clasificador a emplear
-    :param X: conjunto de ejemplos X
-    :param y: clasificacion esperada
-    """
-    pred = []  # tablero que contenga nuestra prediccion para todos los ejemplos en X con el clasificador dado en argumento
-    for i in range(len(X)):
-        pred.append(clasificador.clasifica(X[i]))
-    return len(np.where(pred == y)[0]) / len(X)
-
-
-# from sklearn.datasets import load_breast_cancer
-
-# cancer=load_breast_cancer()
-
-# X_cancer,y_cancer=cancer.data, cancer.target
-
-# Xe_cancer, Xp_cancer, ye_cancer, yp_cancer = particion_entr_prueba(carga_datos.X_cancer,carga_datos.y_cancer)
-
-# lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
-
-# lr_cancer.entrena(Xe_cancer,ye_cancer,10000)      
-
-# print("Test Regresion logistica sobre los datos del cancer.")
-# print("Rendimiento:")
-# rendimiento(lr_cancer, normaliza(Xe_cancer), ye_cancer)
+            maximo = {}
+            find_max = max(self.clasifica_prob(ejemplo), key=self.clasifica_prob(ejemplo).get)
+            maximo[find_max] = self.clasifica_prob(ejemplo)[find_max]
+            
+        return maximo
 
 
 # -----------------------------------
@@ -737,19 +684,26 @@ class RL_OvR():
          self.n_epochs = n_epochs
          self.pesos = list()
          self.reg = list()
-         # si pesos está vacía, el clasificador no está entrenado
+         self.flag_entrenado = False
 
      def entrena(self, X, y):
         for i in range(len(self.clases)):
             self.reg.append(RegresionLogisticaMiniBatch(clases=[0, 1], normalizacion=False, rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam, n_epochs=self.n_epochs,pesos_iniciales=None))
             y_new = np.array([1 if j == self.clases[i] else 0 for j in y])
             self.reg[i].entrena(X, y_new)
+            self.flag_entrenado = True
 
      def clasifica(self, ejemplo):
-         prob = []
+        if self.flag_entrenado == False:
+            raise ClasificadorNoEntrenado("Debe entrenar antes el clasificador.")
+        else:
+         probs = {}
+         maximo = {}
          for i in range(len(self.clases)):
-            prob.append(self.reg[i].clasifica_prob(ejemplo)[1])
-         return self.clases[np.argmax(prob)]
+            probs[i] = self.reg[i].clasifica_prob(ejemplo)[1]
+        find_max = max(probs, key=probs.get)
+        maximo[find_max] = probs[find_max]
+        return maximo
 
 
 # ------------------------------------------------------------
@@ -819,31 +773,33 @@ def leer_label(fichero):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--topic", help=" Para imprimir los resultados", default=True)
-    parser.add_argument("-o", "--optimize", help=" Para imprimir optimizacion y resultados segun modelos", default=False)
+    parser.add_argument("-e", "--ejercicio", help=" Indicar ejercicio (1,2 o 3)", required=True)
+    parser.add_argument("-o", "--optimize", help=" Para imprimir optimizacion segun modelos", default=False)
     args = parser.parse_args()
     
     
-    if args.topic == "True":
+    #if args.topic == "True":
+    if args.ejercicio == "1":
         # Ejemplo para imprimir resultado de Punto I.3 
 
         # Tenis
-        print("----------------------------------") 
-        print("Test NaiveBayes con datos de Jugar al tenis")
+        print("----------------------------------------------------") 
+        print("Test NaiveBayes con datos de Jugar al tenis: ejemplo")
         nb_tenis = NaiveBayes(k=0.5)
         nb_tenis.entrena(X_tenis,y_tenis)
         #ej_tenis=np.array(['Soleado','Baja','Alta','Fuerte'])
         #nb_tenis.clasifica_prob(ej_tenis)
         #nb_tenis.clasifica(ej_tenis)
-        print("Rendimiento: ",rendimiento_p1(nb_tenis,X_tenis,y_tenis))
-        # Rendimiento:  
+        print("Rendimiento con k = 0.5: ",rendimiento(nb_tenis,X_tenis,y_tenis))
+        # Rendimiento:  0.9285714285714286
 
         # Votos
-        print("----------------------------------") 
-        print("Test NaiveBayes con datos de Votos")
+        print("-------------------------------------------") 
+        print("Test NaiveBayes con datos de Votos: ejemplo")
         X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(X_votos, y_votos, test_size=0.25, random_state=10)
         nb_votos = NaiveBayes(k=0.5)
         nb_votos.entrena(X_votos_train,y_votos_train)
-        print("Rendimiento: ",rendimiento_p1(nb_votos,X_votos_test,y_votos_test))
+        print("Rendimiento k = 0.5: ",rendimiento(nb_votos,X_votos_test,y_votos_test))
         # Rendimiento:  0.908256880733945
 
         # Creditos
@@ -854,7 +810,7 @@ def main():
         X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25, random_state=10)
         nb_credito = NaiveBayes(k=0.7)
         nb_credito.entrena(X_credito_train,y_credito_train)
-        print("Rendimiento: ", rendimiento_p1(nb_credito,X_credito_test,y_credito_test))
+        print("Rendimiento: ", rendimiento(nb_credito,X_credito_test,y_credito_test))
         # Rendimiento:  0.6257668711656442
 
         # Peliculas
@@ -868,7 +824,7 @@ def main():
         X_cancer_train, X_cancer_test, y_cancer_train, y_cancer_test = train_test_split(X_cancer, y_cancer, test_size=0.25, random_state=10)
         lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
         lr_cancer.entrena(X_cancer_train, y_cancer_train)
-        print("Rendimiento: ",rendimiento_p2(lr_cancer, normaliza(X_cancer_test), y_cancer_test))
+        print("Rendimiento: ",rendimiento(lr_cancer, normaliza(X_cancer_test), y_cancer_test))
         # Rendimiento:  0.951048951048951
 
         # Ejemplo para imprimir resultado de Punto II.1
@@ -877,7 +833,7 @@ def main():
         X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(X_votos, y_votos, test_size=0.25, random_state=10)
         lr_votos = RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
         lr_votos.entrena(X_votos_train, y_votos_train)
-        print("Rendimiento: ",rendimiento_p2(lr_votos, normaliza(X_votos_test), y_votos_test))
+        print("Rendimiento: ",rendimiento(lr_votos, normaliza(X_votos_test), y_votos_test))
         # Rendimiento:  0.9541284403669725
 
         # Ejemplo para imprimir resultado de Punto III.1
@@ -886,8 +842,8 @@ def main():
         X_iris_train, X_iris_test, y_iris_train, y_iris_test = train_test_split(X_iris, y_iris, test_size=0.25, random_state=10)
         rl_iris = RL_OvR([0, 1, 2], rate=0.001, batch_tam=20, n_epochs=1000)
         rl_iris.entrena(X_iris_train, y_iris_train)
-        print("Rendimiento:", rendimiento_p2(rl_iris, X_iris_test, y_iris_test), "\n")
-        # Rendimiento: 0.9473684210526315 
+        print("Rendimiento:", rendimiento(rl_iris, X_iris_test, y_iris_test), "\n")
+        # Rendimiento:  0.9210526315789473
 
         # Clasificación de imágenes de dígitos escritos a mano de Punto III.2
         print("---------------------------------------------------------------------------------------") 
@@ -902,7 +858,7 @@ def main():
         #y_digitos_val = leer_label("digitdata/validationlabels")
         #ovr_digitos = RL_OvR(np.arange(10), rate=0.4, batch_tam=64, n_epochs=100)
         #ovr_digitos.entrena(X_digitos_train, y_digitos_train)
-        #print("Rendimiento:", rendimiento_p2(ovr_digitos, X_digitos_test, y_digitos_test), "\n")
+        #print("Rendimiento:", rendimiento(ovr_digitos, X_digitos_test, y_digitos_test), "\n")
         # Rendimiento: 0.763
 
 
@@ -918,7 +874,7 @@ def main():
             X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(X_votos, y_votos, test_size=0.25, random_state=10)
             nb_votos = NaiveBayes(k=i/20)
             nb_votos.entrena(X_votos_train, y_votos_train)
-            valor = rendimiento_p1(nb_votos, X_votos_test, y_votos_test)
+            valor = rendimiento(nb_votos, X_votos_test, y_votos_test)
         
             # Buscar maximo
             if band == True and result[-1] < valor:
