@@ -345,13 +345,45 @@ def optimizar_nb(X,y):
 # hacer esto en el ejercicio del tema de modelos probabilísticos.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
+def cine():
+    import random as rd
+    from sklearn.datasets import load_files
+    from sklearn.feature_extraction.text import CountVectorizer
+    
+    print('Load Info')
+    reviews_train = load_files("aclImdb/train/")
+    muestra_entr=random.sample(list(zip(reviews_train.data,
+                                    reviews_train.target)),k=2000)
+    text_train=[d[0] for d in muestra_entr]
+    text_train = [doc.replace(b"<br />", b" ") for doc in text_train]
+    y_imdb_train=np.array([d[1] for d in muestra_entr])
+    reviews_test = load_files("aclImdb/test/")
+    muestra_test=random.sample(list(zip(reviews_test.data,
+                                        reviews_test.target)),k=400)
+    text_test=[d[0] for d in muestra_test]
+    text_test = [doc.replace(b"<br />", b" ") for doc in text_test]
+    y_imdb_test=np.array([d[1] for d in muestra_test])
 
 
 
+    print('Vectorizer')
+    vectorizer = CountVectorizer(min_df=100, stop_words="english", binary=True).fit(text_train)
+    
+    X_train_imdb = vectorizer.transform(text_train).toarray()
+    X_test_imdb =vectorizer.transform(text_test).toarray()
+    
+    nb_imdb = NaiveBayes(k=1)
+    print('Training NB I.1...')
+    nb_imdb.entrena(X_train_imdb, y_imdb_train)
+    print("Rendimiento: ",rendimiento_p1(nb_imdb, X_test_imdb, y_imdb_test))
+    print('----------------------------------')
+    
 
-
-
-
+    print('Training NB II.1...')
+    lr_imdb = RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
+    lr_imdb.entrena(X_train_imdb, y_imdb_train)
+    print("Rendimiento: ",rendimiento_p2(lr_imdb, normaliza(X_test_imdb), y_imdb_test))
+    print('----------------------------------')
 
 
 
@@ -814,6 +846,10 @@ def leer_label(fichero):
     return np.array(labels)
 
 
+
+
+
+
 # Ejecucion con python clasificadores.py -t True
 # Ejecucion con python clasificadores.py -o True -t False
 def main():
@@ -824,6 +860,9 @@ def main():
     
     
     if args.topic == "True":
+        
+        cine()
+        
         # Ejemplo para imprimir resultado de Punto I.3 
 
         # Tenis
@@ -904,6 +943,8 @@ def main():
         #ovr_digitos.entrena(X_digitos_train, y_digitos_train)
         #print("Rendimiento:", rendimiento_p2(ovr_digitos, X_digitos_test, y_digitos_test), "\n")
         # Rendimiento: 0.763
+        
+
 
 
     if args.optimize == "True":
