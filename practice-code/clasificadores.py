@@ -266,7 +266,7 @@ def optimizar_nb(X,y):
         valor = rendimiento(nb, X_test, y_test)
    
        # Buscar maximo
-        if band == True and result[-1] < valor:
+        if band == True and result[-1][0] < valor:
             max = valor
    
        # primera vez
@@ -274,12 +274,13 @@ def optimizar_nb(X,y):
             max = valor
             band = True
        # Guardo registros
-        result.append(valor)
+        result.append([valor,i/20])
 
     for i in range(len(result)):
         #print("Rendimiento : "+str(result[i])+" con k = "+str((i+1)/10))
-        if max == result[i]:
-            print("El mejor rendimiento es de : "+str(max)+" con k = "+str((i+1)/10)) 
+        if max == result[i][0]:
+            print("El mejor rendimiento es de : "+str(max)+" con k = "+result[i][1])
+            #str((i+1)/10)) 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NOTA:
@@ -321,13 +322,45 @@ def optimizar_nb(X,y):
 # hacer esto en el ejercicio del tema de modelos probabilísticos.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
+def cine():
+    import random as rd
+    from sklearn.datasets import load_files
+    from sklearn.feature_extraction.text import CountVectorizer
+    
+    print('Load Info')
+    reviews_train = load_files("aclImdb/train/")
+    muestra_entr=random.sample(list(zip(reviews_train.data,
+                                    reviews_train.target)),k=2000)
+    text_train=[d[0] for d in muestra_entr]
+    text_train = [doc.replace(b"<br />", b" ") for doc in text_train]
+    y_imdb_train=np.array([d[1] for d in muestra_entr])
+    reviews_test = load_files("aclImdb/test/")
+    muestra_test=random.sample(list(zip(reviews_test.data,
+                                        reviews_test.target)),k=400)
+    text_test=[d[0] for d in muestra_test]
+    text_test = [doc.replace(b"<br />", b" ") for doc in text_test]
+    y_imdb_test=np.array([d[1] for d in muestra_test])
 
 
 
+    print('Vectorizer')
+    vectorizer = CountVectorizer(min_df=100, stop_words="english", binary=True).fit(text_train)
+    
+    X_train_imdb = vectorizer.transform(text_train).toarray()
+    X_test_imdb =vectorizer.transform(text_test).toarray()
+    
+    nb_imdb = NaiveBayes(k=1)
+    print('Training NB I.1...')
+    nb_imdb.entrena(X_train_imdb, y_imdb_train)
+    print("Rendimiento: ",rendimiento(nb_imdb, X_test_imdb, y_imdb_test))
+    print('----------------------------------')
+    
 
-
-
-
+    print('Training NB II.1...')
+    lr_imdb = RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
+    lr_imdb.entrena(X_train_imdb, y_imdb_train)
+    print("Rendimiento: ",rendimiento(lr_imdb, normaliza(X_test_imdb), y_imdb_test))
+    print('----------------------------------')
 
 
 
@@ -768,18 +801,24 @@ def leer_label(fichero):
     return np.array(labels)
 
 
+
+
+
+
 # Ejecucion con python clasificadores.py -t True
 # Ejecucion con python clasificadores.py -o True -t False
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--topic", help=" Para imprimir los resultados", default=True)
-    parser.add_argument("-e", "--ejercicio", help=" Indicar ejercicio (1,2 o 3)", required=True)
+    #parser.add_argument("-e", "--ejercicio", help=" Indicar ejercicio (1,2 o 3)", required=True)
     parser.add_argument("-o", "--optimize", help=" Para imprimir optimizacion segun modelos", default=False)
     args = parser.parse_args()
     
     
-    #if args.topic == "True":
-    if args.ejercicio == "1":
+    if args.topic == "True":
+    #if args.ejercicio == "1":
+        
+        
         # Ejemplo para imprimir resultado de Punto I.3 
 
         # Tenis
@@ -799,50 +838,65 @@ def main():
         X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(X_votos, y_votos, test_size=0.25, random_state=10)
         nb_votos = NaiveBayes(k=0.5)
         nb_votos.entrena(X_votos_train,y_votos_train)
-        print("Rendimiento k = 0.5: ",rendimiento(nb_votos,X_votos_test,y_votos_test))
+        print("Rendimiento con k = 0.5: ",rendimiento(nb_votos,X_votos_test,y_votos_test))
         # Rendimiento:  0.908256880733945
+        print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
+        optimizar_nb(X_votos_test,y_votos_test)
 
         # Creditos
-        print("------------------------------------") 
-        print("Test NaiveBayes con datos de Credito")
+        print("---------------------------------------------") 
+        print("Test NaiveBayes con datos de Credito: ejemplo")
         X_credito=np.array([d[:-1] for d in datos_con_la_clase])
         y_credito=np.array([d[-1] for d in datos_con_la_clase])
         X_credito_train, X_credito_test, y_credito_train, y_credito_test = train_test_split(X_credito, y_credito, test_size=0.25, random_state=10)
         nb_credito = NaiveBayes(k=0.7)
         nb_credito.entrena(X_credito_train,y_credito_train)
-        print("Rendimiento: ", rendimiento(nb_credito,X_credito_test,y_credito_test))
+        print("Rendimiento con k = 0.7: ", rendimiento(nb_credito,X_credito_test,y_credito_test))
         # Rendimiento:  0.6257668711656442
+        print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
+        optimizar_nb(X_credito_test,y_credito_test)
 
         # Peliculas
-        
+        #cine()
+        # Rendimiento con Naive Bayes: 0.7625
+        # Rendimiento con Regresión logística: 0.735
+
+    #elif args.ejercicio == "2":
+
         # Ejemplo para imprimir resultado de Punto II.1
-        print("----------------------------------------------------") 
-        print("Test Regresion logistica sobre los datos del cancer.")
+        print("------------------------------------------------------------") 
+        print("Test Regresion logistica sobre los datos del cancer: ejemplo")
         cancer=load_breast_cancer()
         X_cancer,y_cancer=cancer.data, cancer.target
         # Xe_cancer, Xp_cancer, ye_cancer, yp_cancer = particion_entr_prueba(X_cancer,y_cancer)
         X_cancer_train, X_cancer_test, y_cancer_train, y_cancer_test = train_test_split(X_cancer, y_cancer, test_size=0.25, random_state=10)
         lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
         lr_cancer.entrena(X_cancer_train, y_cancer_train)
-        print("Rendimiento: ",rendimiento(lr_cancer, normaliza(X_cancer_test), y_cancer_test))
+        print("Rendimiento con rate=0.1, rate_decay=True y normalizacion=True: ",rendimiento(lr_cancer, normaliza(X_cancer_test), y_cancer_test))
         # Rendimiento:  0.951048951048951
+        print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
+        #optimizar_lr(X_cancer_test,y_cancer_test)
 
         # Ejemplo para imprimir resultado de Punto II.1
-        print("--------------------------------------------------") 
-        print("Test Regresion logistica sobre los datos de Votos.")
+        print("----------------------------------------------------------") 
+        print("Test Regresion logistica sobre los datos de Votos: ejemplo")
         X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(X_votos, y_votos, test_size=0.25, random_state=10)
         lr_votos = RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
         lr_votos.entrena(X_votos_train, y_votos_train)
-        print("Rendimiento: ",rendimiento(lr_votos, normaliza(X_votos_test), y_votos_test))
+        print("Rendimiento con rate=0.1, rate_decay=True y normalizacion=True: ",rendimiento(lr_votos, normaliza(X_votos_test), y_votos_test))
         # Rendimiento:  0.9541284403669725
+        print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
+        #optimizar_lr(X_votos_test,y_votos_test)
+
+    #elif args.ejercicio == "3":
 
         # Ejemplo para imprimir resultado de Punto III.1
-        print("------------------------------------") 
-        print("Test One vs Rest con los datos iris.")
+        print("--------------------------------------------") 
+        print("Test One vs Rest con los datos iris: ejemplo")
         X_iris_train, X_iris_test, y_iris_train, y_iris_test = train_test_split(X_iris, y_iris, test_size=0.25, random_state=10)
         rl_iris = RL_OvR([0, 1, 2], rate=0.001, batch_tam=20, n_epochs=1000)
         rl_iris.entrena(X_iris_train, y_iris_train)
-        print("Rendimiento:", rendimiento(rl_iris, X_iris_test, y_iris_test), "\n")
+        print("Rendimiento con rate=0.001, batch_tam=20, n_epoch=1000:", rendimiento(rl_iris, X_iris_test, y_iris_test), "\n")
         # Rendimiento:  0.9210526315789473
 
         # Clasificación de imágenes de dígitos escritos a mano de Punto III.2
@@ -860,6 +914,8 @@ def main():
         #ovr_digitos.entrena(X_digitos_train, y_digitos_train)
         #print("Rendimiento:", rendimiento(ovr_digitos, X_digitos_test, y_digitos_test), "\n")
         # Rendimiento: 0.763
+        
+
 
 
     if args.optimize == "True":
