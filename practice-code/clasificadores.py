@@ -92,12 +92,12 @@ class NaiveBayes():
         self.X = X
         self.y = y
     
-        #countsClas nos da el nº de veces se da un valor de clasificación, uniqueClas los dos posibles valores de 
-        #clasificación ('si' y 'no')
+        #countsClas nos da el nº de veces que se da un valor de clasificación, uniqueClas los valores de 
+        #clasificación
         uniqueClas, countsClas = np.unique(y, return_counts=True)
         self.uniqueClas = uniqueClas
     
-        #Función de probabilidad P(C=c)
+        #Función de probabilidad P(C=c) de los valores de clasificación
         p_c = []
         for i in range(len(uniqueClas)):
             p_c.append(countsClas[i]/len(y))
@@ -108,10 +108,11 @@ class NaiveBayes():
         list_p_condics = []
         self.list_p_condics = list_p_condics
         
-        for i in list(uniqueClas): #Por cada valor de clasificación ('si' o 'no'), vamos a añadir un registro en list_p_condics
-            p_condics =[] #Matriz para el valor de clasificación i
+        for i in list(uniqueClas): #Por cada valor de clasificación, vamos a añadir un registro en list_p_condics
+            p_condics =[] #Lista para las probabilidades condicionadas asociadas a la clasificación i,
+            #tendrá tantos registros como atributos haya y tantas columnas como valores tenga cada atributo
             
-            for j in range(X.shape[1]): #Por cada atributo, vamos a calcular sus probabilidades condicionadas. 
+            for j in range(X.shape[1]): #Por cada atributo, vamos a calcular sus probabilidades condicionadas
                                         #j es el nº de atributo 
         
                 valuesAtribj, numberOfValuesAtribj = np.unique(X[:,j], return_counts=True)
@@ -121,9 +122,9 @@ class NaiveBayes():
                                                    #vamos a calcular su probabilidad condicionada
                     
                     positionsOfk = np.where(X[:,j] == valuesAtribj[k]) #Posiciones en las que el atributo j vale k
-                    #Formamos el vector y con las posiciones en las que el clasificador vale i y el atributo j vale k
+                    #Formamos el vector 'y' con las posiciones en las que el clasificador vale i y el atributo j vale k
                     y_k = []
-                    for l in positionsOfk: #Por cada valor de posición de k, nos quedamos con las posiciones de y, formamos y_k
+                    for l in positionsOfk: #Por cada valor de posición de k, nos quedamos con las posiciones de 'y', formando así 'y_k'
                         y_k.append(y[l])
                         
                     positionsOfk_i = np.where(y_k[0] == i) #Posiciones del valor de clasificación i en y
@@ -280,7 +281,7 @@ def optimizar_nb(X_train,X_test,y_train,y_test):
         if max == result[i][0]:
             print("El mejor rendimiento es de : "+str(max)+" con k = "+str(result[i][1]))
 
-# -> Ejecución con python para Ejercicio 2: clasificadores.py -e 3
+# -> Ejecución con python para Ejercicio 1: clasificadores.py -e 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NOTA:
@@ -552,10 +553,9 @@ class RegresionLogisticaMiniBatch():
         for n in range(n_epochs):
             total_minibatches = np.array_split(conjunto_total, self.batch_tam) #En cada epoch, dividimos el cjto total
             #en minibatches del tamaño dado como parámetro batch_tam
-            # dividimos los datos en subconjuntos
             for minibatch in total_minibatches: #Iteramos por cada minibatch
                 suma_acumulada = [0 for x in minibatch[0][:-1]]
-                for minib_element in minibatch:
+                for minib_element in minibatch: # Iteramos por cada atributo
                     # Separamos de nuevo en X e y
                     minib_X = minib_element[:-1]
                     minib_y = minib_element[-1]
@@ -744,7 +744,7 @@ def convierte_0_1(c):
     else:
         return 1
 
-# Esta función lee un fichero dado con imágenes de 28x29 pixeles que representan números y devuelve
+# Esta función lee un fichero dado con imágenes de 28x28 pixeles que representan números y devuelve
 # un vector que representa los dígitos del fichero.
 def cargaImágenes(fichero,ancho,alto):
     with open(fichero) as f:
@@ -925,8 +925,8 @@ def main():
         # Clasificación de imágenes de dígitos escritos a mano de Punto III.2
         print("--------------------------------------------------------------------------------------") 
         print("Test One vs Rest con los datos de clasificación de imágenes de dígitos escritos a mano", "\n")
-        # Train tiene 5000 ejemplos, test 1000 y validación 1000. 
-        # Hemos tomado de train sólo 600 ejemplos para reducir el tiempo de ejecución.
+        # Train tiene 5000 ejemplos, test 1000 y validación 1000
+        # Hemos tomado de train sólo 600 ejemplos para reducir el tiempo de ejecución
         X_digitos_train = cargaImágenes("digitdata/trainingimages",28,28)[0:600]
         y_digitos_train = cargaClases("digitdata/traininglabels")[0:600]
         X_digitos_test = cargaImágenes("digitdata/testimages",28,28)
