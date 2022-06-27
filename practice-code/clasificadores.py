@@ -22,6 +22,7 @@ iris=load_iris()
 X_iris=iris.data
 y_iris=iris.target
 
+# En el directorio donde está el clasificador, descomprimimos los datos de digitdata y aclImdb para que se puedan ejecutar los ejemplos.
 
 # --------------------------------------------------------------------------
 # Autor(a) del trabajo:
@@ -300,7 +301,7 @@ from sklearn.model_selection import train_test_split
 
 # Creamos una función para importar los datos de IMDB y vectorizarlos.
   
-def cine():
+def IMDB():
     import random as rd
     from sklearn.datasets import load_files
     from sklearn.feature_extraction.text import CountVectorizer
@@ -319,13 +320,21 @@ def cine():
     text_test = [doc.replace(b"<br />", b" ") for doc in text_test]
     y_imdb_test=np.array([d[1] for d in muestra_test])
 
-    print('Vectorizer')
+    print('Vectorizamos los datos')
     vectorizer = CountVectorizer(min_df=100, stop_words="english", binary=True).fit(text_train)
     
     X_train_imdb = vectorizer.transform(text_train).toarray()
     X_test_imdb =vectorizer.transform(text_test).toarray()
     
+    lr_imdb = RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
+    lr_imdb.entrena(X_train_imdb, y_imdb_train)
+    print("Rendimiento con Regresión logística: ",rendimiento(lr_imdb, normalizar(X_test_imdb), y_imdb_test))
+    # Rendimiento con Regresión logística: 0.735
 
+    nb_imdb = NaiveBayes(k=1)
+    nb_imdb.entrena(X_train_imdb, y_imdb_train)
+    print("Rendimiento con Naive Bayes: ",rendimiento(nb_imdb, X_test_imdb, y_imdb_test))
+    # Rendimiento con Naive Bayes: 0.7625
 
 
 
@@ -806,6 +815,7 @@ def optimizar_modelo(modelo,X_train,X_test,y_train,y_test,X_val,y_val,range_p1,r
 # Ejecucion con python para Ejercicio 1: clasificadores.py -e 1
 # Ejecucion con python para Ejercicio 2: clasificadores.py -e 2
 # Ejecucion con python para Ejercicio 3: clasificadores.py -e 3
+# Ejecucion con python para Ejercicio 1 y 2 con IMDB: clasificadores.py -e 4
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--ejercicio", help=" Indicar ejercicio (1,2 o 3)", required=True)
@@ -856,15 +866,6 @@ def main():
         optimizar_modelo('NaiveBayes',X_credito_train,X_credito_test,y_credito_train,y_credito_test,X_credito_val,y_credito_val,range(1,10),[],[])
 
 
-        # Peliculas
-        print("------------------------------------------") 
-        print("Test NaiveBayes con datos de IMDB: ejemplo", "\n")
-        #cine()
-        #nb_imdb = NaiveBayes(k=1)
-        #nb_imdb.entrena(X_train_imdb, y_imdb_train)
-        #print("Rendimiento con k = 1: ",rendimiento(nb_imdb, X_test_imdb, y_imdb_test))
-        # Rendimiento con Naive Bayes: 0.7625
-
     elif args.ejercicio == "2":
 
         # Ejemplo para imprimir resultado de Punto II.1
@@ -878,7 +879,7 @@ def main():
 
         print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
         range_rate=[random.uniform(0,1) for _ in range(1,5)]
-        optimizar_modelo('RegresionMiniBatch',X_cancer_train,X_cancer_test,y_cancer_train,y_cancer_test,X_cancer_val,y_cancer_val,range_rate,[True,False],[100,150,200])
+        optimizar_modelo('RegresionMiniBatch',X_cancer_train,X_cancer_test,y_cancer_train,y_cancer_test,X_cancer_val,y_cancer_val,range_rate,[True,False],[100,150])
 
 
         # Rendimiento:  
@@ -890,16 +891,9 @@ def main():
         X_votos_train, X_votos_val, y_votos_train, y_votos_val = train_test_split(X_votos_train, y_votos_train, test_size=0.25, random_state=10)
 
         print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
-        optimizar_modelo('RegresionMiniBatch',X_votos_train,X_votos_test,y_votos_train,y_votos_test,X_votos_val,y_votos_val,range_rate,[True,False],[100,150,200])
+        optimizar_modelo('RegresionMiniBatch',X_votos_train,X_votos_test,y_votos_train,y_votos_test,X_votos_val,y_votos_val,range_rate,[True,False],[100,150])
 
 
-        print("---------------------------------------------------") 
-        print("Test Regresion logistica con datos de IMDB: ejemplo", "\n")
-        #cine()
-        #lr_imdb = RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
-        #lr_imdb.entrena(X_train_imdb, y_imdb_train)
-        #print("Rendimiento: ",rendimiento(lr_imdb, normaliza(X_test_imdb), y_imdb_test))
-        # Rendimiento con Regresión logística: 0.735
 
     elif args.ejercicio == "3":
 
@@ -938,6 +932,13 @@ def main():
         print("Vemos el rendimiento para el último modelo con el conjunto de validación: ",
         rendimiento(ovr_digitos, X_digitos_val, y_digitos_val))
         # Rendimiento: 0.783
+
+    elif args.ejercicio == "4":
+
+        # Peliculas
+        print("---------------------------------------------------------------------") 
+        print("Test NaiveBayes y Regresión logística para los datos de IMDB: ejemplo", "\n")
+        IMDB()
 
 if __name__ == '__main__':
     main()
