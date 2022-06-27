@@ -1,0 +1,33 @@
+digraph Tree {
+node [shape=box, style="filled, rounded", color="black", fontname=helvetica] ;
+edge [fontname=helvetica] ;
+0 [label="Age <= 37.0\ngini = 0.497\nsamples = 87\nvalue = [40, 47]", fillcolor="#e2f0fb"] ;
+1 [label="gini = 0.0\nsamples = 10\nvalue = [10, 0]", fillcolor="#e58139"] ;
+0 -> 1 [labeldistance=2.5, labelangle=45, headlabel="True"] ;
+2 [label="Resistin <= 13.248\ngini = 0.476\nsamples = 77\nvalue = [30, 47]", fillcolor="#b7dcf6"] ;
+0 -> 2 [labeldistance=2.5, labelangle=-45, headlabel="False"] ;
+3 [label="Age <= 65.5\ngini = 0.488\nsamples = 45\nvalue = [26, 19]", fillcolor="#f8ddca"] ;
+2 -> 3 ;
+4 [label="Glucose <= 85.0\ngini = 0.473\nsamples = 26\nvalue = [10, 16]", fillcolor="#b5daf5"] ;
+3 -> 4 ;
+5 [label="gini = 0.0\nsamples = 5\nvalue = [5, 0]", fillcolor="#e58139"] ;
+4 -> 5 ;
+6 [label="BMI <= 33.496\ngini = 0.363\nsamples = 21\nvalue = [5, 16]", fillcolor="#77bced"] ;
+4 -> 6 ;
+7 [label="gini = 0.198\nsamples = 18\nvalue = [2, 16]", fillcolor="#52a9e8"] ;
+6 -> 7 ;
+8 [label="gini = 0.0\nsamples = 3\nvalue = [3, 0]", fillcolor="#e58139"] ;
+6 -> 8 ;
+9 [label="Glucose <= 122.0\ngini = 0.266\nsamples = 19\nvalue = [16, 3]", fillcolor="#ea995e"] ;
+3 -> 9 ;
+10 [label="gini = 0.111\nsamples = 17\nvalue = [16, 1]", fillcolor="#e78945"] ;
+9 -> 10 ;
+11 [label="gini = 0.0\nsamples = 2\nvalue = [0, 2]", fillcolor="#399de5"] ;
+9 -> 11 ;
+12 [label="BMI <= 31.348\ngini = 0.219\nsamples = 32\nvalue = [4, 28]", fillcolor="#55abe9"] ;
+2 -> 12 ;
+13 [label="gini = 0.069\nsamples = 28\nvalue = [1, 27]", fillcolor="#40a1e6"] ;
+12 -> 13 ;
+14 [label="gini = 0.375\nsamples = 4\nvalue = [3, 1]", fillcolor="#eeab7b"] ;
+12 -> 14 ;
+}
