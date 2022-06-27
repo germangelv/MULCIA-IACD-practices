@@ -3,10 +3,12 @@
 # Dpto. de C. de la Computación e I.A. (Univ. de Sevilla)
 # ===================================================================
 import sys
+
 import numpy as np
 import argparse
 import random
 import math
+from tqdm import tqdm
 
 # Importamos los datos que vamos a usar en los ejemplos posteriores.
 from jugar_tenis import X_tenis
@@ -19,8 +21,6 @@ from sklearn.datasets import load_iris
 iris=load_iris()
 X_iris=iris.data
 y_iris=iris.target
-
-# !{sys.executable} -m pip install numpy sklearn
 
 
 # --------------------------------------------------------------------------
@@ -235,7 +235,7 @@ def rendimiento(clasificador,X,y):
     return len(v_ok)/len(y)
 
 
-# --------------------------`¡'0`
+# --------------------------
 # I.3) Aplicando Naive Bayes
 # --------------------------
 
@@ -254,32 +254,6 @@ def rendimiento(clasificador,X,y):
 # Mostrar el proceso realizado en cada caso, y los rendimientos obtenidos. 
 
 from sklearn.model_selection import train_test_split
-
-# Creamos una función para buscar el parámetro que optimiza el rendimiento de Naive Bayes.
-
-def optimizar_nb(X_train,X_test,y_train,y_test):
-    result = []
-    band = False
-    for i in range(1,10):
-        nb = NaiveBayes(k=i/10)
-        nb.entrena(X_train, y_train)
-        valor = rendimiento(nb, X_test, y_test)
-
-       # Buscar maximo
-        if band == True and result[-1][0] < valor:
-            max = valor
-   
-       # primera vez
-        if band == False:
-            max = valor
-            band = True
-
-        # Guardo registros
-        result.append([valor,i/10])
-
-    for i in range(len(result)):
-        if max == result[i][0]:
-            print("El mejor rendimiento es de : "+str(max)+" con k = "+str(result[i][1]))
 
 # -> Ejecución con python para Ejercicio 1: clasificadores.py -e 1
 
@@ -524,29 +498,28 @@ class RegresionLogisticaMiniBatch():
         self.reiniciar_pesos = reiniciar_pesos
         self.pesos_iniciales = pesos_iniciales
         self.pesos = list()
-        
+
+        if self.normalizacion: # Si nos piden normalizar los datos, aplicamos la función de normalización
+            X = normalizar(X)        
         
         if reiniciar_pesos == True:
             pesos = []
             if self.pesos_iniciales is not None:  # Si nos dan los pesos iniciales, los usamos para comenzar
-                pesos = list(self.pesos_iniciales)
+                pesos = self.pesos_iniciales.tolist()
             else:  # Sino, iniciamos los pesos de forma aleatoria usando random, con valores entre -1 y 1
                 pesos = [random.uniform(-1,1) for i in range(X.shape[1])]
         else: # Si reiniciar_pesos es False, sólo los reiniciamos cuando es la primera vez que entrenamos
             if self.flag_entrenado == False:
                 pesos = []
                 if self.pesos_iniciales is not None:  # Si nos dan los pesos iniciales, los usamos para comenzar
-                    pesos = list(self.pesos_iniciales)
+                    pesos = self.pesos_iniciales.tolist()
                 else:  # Sino, iniciamos los pesos de forma aleatoria usando random
                     pesos = [random.uniform(-1,1) for i in range(X.shape[1])]
         
-        y_2 = y.reshape(len(y), 1) # Transformamos y para poder luego unirlo a X
-
-        if self.normalizacion: # Si nos piden normalizar los datos, aplicamos la función de normalización
-            X = normalizar(X)
+        y_conc = y.reshape(len(y), 1) # Transformamos y para poder luego unirlo a X
                     
         # Unimos X e y en un array para dividir en cada epoch ambos conjuntos
-        conjunto_total = np.concatenate((X, y_2), axis=1)
+        conjunto_total = np.concatenate((X, y_conc), axis=1)
         rate_0 = self.rate
         rate_n = self.rate
         # Por cada epoch vamos a dividir el cjto en mini-batches y actualizar los pesos en cada uno de ellos
@@ -615,6 +588,8 @@ class RegresionLogisticaMiniBatch():
 
 # -> Ejecución con python para Ejercicio 2: clasificadores.py -e 2
 
+# Creamos una función para buscar el parámetro que optimiza el rendimiento del modelo de regresión logística.
+
 
 
 # ===================================
@@ -677,6 +652,12 @@ class RegresionLogisticaMiniBatch():
 # >>> 0.9736842105263158
 # --------------------------------------------------------------------
 
+def compara(a,b):
+    if a == b:
+        return 1
+    else:
+        return 0
+
 class RL_OvR():
 
      def __init__(self, clases, rate=0.1, rate_decay=False, batch_tam=64):
@@ -694,7 +675,7 @@ class RL_OvR():
         for i in range(len(self.clases)):
             self.clasificadores_bin.append(RegresionLogisticaMiniBatch(clases=[0, 1], normalizacion=False, rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam))
             # Transformamos el vector y marcando como 1 los valores que corresponden a la clase actual, y 0 el resto
-            y_clase = np.array([1 if j == self.clases[i] else 0 for j in y])
+            y_clase = np.array([compara(j,self.clases[i]) for j in y])
             self.clasificadores_bin[i].entrena(X, y_clase, n_epochs=self.n_epochs, reiniciar_pesos=True, pesos_iniciales=None)
             self.flag_entrenado = True
 
@@ -771,6 +752,56 @@ def cargaClases(fichero):
 # Ejecución de los resultados para los diferentes modelos
 # ------------------------------------------------------------
 
+# Definimos una función para buscar el modelo con mejor rendimiento dado unos parámetros.
+
+def optimizar_modelo(modelo,X_train,X_test,y_train,y_test,X_val,y_val,range_p1,range_p2,range_p3):
+
+    result = []
+    if modelo == 'NaiveBayes':
+        
+        for p1 in tqdm(range_p1,ncols = 100 , desc ="Por cada k ..."):
+
+            nb = NaiveBayes(k=p1)
+            nb.entrena(X_train, y_train)
+            valor = rendimiento(nb, X_test, y_test)
+            result.append([valor,p1,nb])        
+        
+    elif modelo == 'RegresionMiniBatch':
+        for p1 in tqdm(range_p1,ncols = 100 , desc ="Por cada parámetro ..."):
+            for p2 in range_p2:
+                for p3 in range_p3:
+
+                    lr = RegresionLogisticaMiniBatch(rate=p1,rate_decay=p2,batch_tam=p3)
+                    lr.entrena(X_train, y_train,n_epochs=100)
+                    valor = rendimiento(lr, X_test, y_test)
+                    result.append([valor,p1,p2,p3,lr])
+
+    else:
+        for p1 in tqdm(range_p1,ncols = 100 , desc ="Por cada parámetro ..."):
+            for p2 in range_p2:
+                for p3 in range_p3:
+
+                    ovr = RL_OvR(np.arange(10), rate=p1, batch_tam=p3)
+                    ovr.entrena(X_train, y_train, n_epochs=p2)
+                    valor = rendimiento(ovr, X_test, y_test)
+                    result.append([valor,p1,p2,p3,ovr])
+            
+    result2 = [i[0] for i in result]
+            
+    for i in np.where(np.asarray(result2)==max(result2))[0].tolist():
+        if modelo == 'NaiveBayes':
+            print("El mejor rendimiento es de : "+str(result[i][0])+", con k = "+str(result[i][1]), "\n")
+            print("Su rendimiento sobre el cjto de validación es : "+str(rendimiento(result[i][2],X_val,y_val))+"\n")
+            print("--------------------------------------------------------------------------------------------------")
+        elif modelo == 'RegresionMiniBatch':
+            print("El mejor rendimiento es de : "+str(result[i][0])+", con rate = "+str(result[i][1])+", rate_decay = "+str(result[i][2])+" y batch_tam = "+str(result[i][3]))
+            print("Su rendimiento sobre el cjto de validación es : "+str(rendimiento(result[i][4],X_val,y_val))+"\n")
+            print("--------------------------------------------------------------------------------------------------")
+        else:
+            print("El mejor rendimiento es de : "+str(result[i][0])+", con rate = "+str(result[i][1])+", n_epochs = "+str(result[i][2])+" y batch_tam = "+str(result[i][3]))
+            print("Su rendimiento sobre el cjto de validación es : "+str(rendimiento(result[i][4],X_val,y_val))+"\n")
+            print("--------------------------------------------------------------------------------------------------")
+
 
 # Ejecucion con python para Ejercicio 1: clasificadores.py -e 1
 # Ejecucion con python para Ejercicio 2: clasificadores.py -e 2
@@ -804,11 +835,10 @@ def main():
 
         nb_votos = NaiveBayes(k=0.5)
         nb_votos.entrena(X_votos_train,y_votos_train)
-        print("Rendimiento con k = 0.5: ",rendimiento(nb_votos,X_votos_test,y_votos_test))
+        print("Rendimiento con k = 0.5: ",rendimiento(nb_votos,X_votos_test,y_votos_test), "\n")
 
-        print("Buscamos los hiperparámetros que dan el mejor rendimiento.", "\n")
-        optimizar_nb(X_votos_train,X_votos_test,y_votos_train,y_votos_test)
-        print("Vemos el rendimiento para el primer modelo con el conjunto de validación: ",rendimiento(nb_votos,X_votos_val,y_votos_val))
+        print("Buscamos los hiperparámetros que dan el mejor rendimiento.", "\n")      
+        optimizar_modelo('NaiveBayes',X_votos_train,X_votos_test,y_votos_train,y_votos_test,X_votos_val,y_votos_val,range(1,10),[],[])
 
         # Creditos
         print("---------------------------------------------") 
@@ -820,11 +850,10 @@ def main():
 
         nb_credito = NaiveBayes(k=0.7)
         nb_credito.entrena(X_credito_train,y_credito_train)
-        print("Rendimiento con k = 0.7: ", rendimiento(nb_credito,X_credito_test,y_credito_test))
+        print("Rendimiento con k = 0.7: ", rendimiento(nb_credito,X_credito_test,y_credito_test), "\n")
 
         print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
-        optimizar_nb(X_credito_train,X_credito_test,y_credito_train,y_credito_test)
-        print("Vemos el rendimiento para el primer modelo con el conjunto de validación: ",rendimiento(nb_credito,X_credito_val,y_credito_val))
+        optimizar_modelo('NaiveBayes',X_credito_train,X_credito_test,y_credito_train,y_credito_test,X_credito_val,y_credito_val,range(1,10),[],[])
 
 
         # Peliculas
@@ -840,68 +869,29 @@ def main():
 
         # Ejemplo para imprimir resultado de Punto II.1
         print("------------------------------------------------------------") 
-        print("Test Regresion logistica sobre los datos del cancer: ejemplo", "\n")
+        print("Test Regresion logistica sobre los datos del cancer", "\n")
         cancer=load_breast_cancer()
         X_cancer,y_cancer=cancer.data, cancer.target
         # Xe_cancer, Xp_cancer, ye_cancer, yp_cancer = particion_entr_prueba(X_cancer,y_cancer)
         X_cancer_train, X_cancer_test, y_cancer_train, y_cancer_test = train_test_split(X_cancer, y_cancer, test_size=0.2, random_state=10)
         X_cancer_train, X_cancer_val, y_cancer_train, y_cancer_val = train_test_split(X_cancer_train, y_cancer_train, test_size=0.25, random_state=10)
 
+        print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
+        range_rate=[random.uniform(0,1) for _ in range(1,5)]
+        optimizar_modelo('RegresionMiniBatch',X_cancer_train,X_cancer_test,y_cancer_train,y_cancer_test,X_cancer_val,y_cancer_val,range_rate,[True,False],[100,150,200])
 
-        lr_cancer1=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
-        lr_cancer1.entrena(X_cancer_train, y_cancer_train,100)
-        print("Rendimiento con rate=0.1, rate_decay=True, normalizacion=True y n_epochs=100: ",
-        rendimiento(lr_cancer1, normalizar(X_cancer_test), y_cancer_test))
-
-        lr_cancer2=RegresionLogisticaMiniBatch(rate=0.01,rate_decay=True,normalizacion=True)
-        lr_cancer2.entrena(X_cancer_train, y_cancer_train,100)
-        print("Rendimiento con rate=0.01, rate_decay=True, normalizacion=True y n_epochs=100: ",
-        rendimiento(lr_cancer2, normalizar(X_cancer_test), y_cancer_test))
-
-        lr_cancer3=RegresionLogisticaMiniBatch(rate=0.01,rate_decay=True,normalizacion=True)
-        lr_cancer3.entrena(X_cancer_train, y_cancer_train,200)
-        print("Rendimiento con rate=0.01, rate_decay=True, normalizacion=True y n_epochs=200: ",
-        rendimiento(lr_cancer3, normalizar(X_cancer_test), y_cancer_test))
-
-        lr_cancer4=RegresionLogisticaMiniBatch(rate=0.01,rate_decay=False,normalizacion=True)
-        lr_cancer4.entrena(X_cancer_train, y_cancer_train,100)
-        print("Rendimiento con rate=0.01, rate_decay=False, normalizacion=True y n_epochs=100: ",
-        rendimiento(lr_cancer4, normalizar(X_cancer_test), y_cancer_test), "\n")
-
-        print("Vemos el rendimiento para el primer modelo con el conjunto de validación: ",
-                rendimiento(lr_cancer1, normalizar(X_cancer_val), y_cancer_val))
 
         # Rendimiento:  
 
         # Ejemplo para imprimir resultado de Punto II.1
         print("----------------------------------------------------------") 
-        print("Test Regresion logistica sobre los datos de Votos: ejemplo", "\n")
+        print("Test Regresion logistica sobre los datos de Votos", "\n")
         X_votos_train, X_votos_test, y_votos_train, y_votos_test = train_test_split(X_votos, y_votos, test_size=0.2, random_state=10)
         X_votos_train, X_votos_val, y_votos_train, y_votos_val = train_test_split(X_votos_train, y_votos_train, test_size=0.25, random_state=10)
 
-        lr_votos1 = RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
-        lr_votos1.entrena(X_votos_train, y_votos_train,100)
-        print("Rendimiento con rate=0.1, rate_decay=True, normalizacion=True y n_epochs=100: ",
-        rendimiento(lr_votos1, normalizar(X_votos_test), y_votos_test))
-  
-        lr_votos2 = RegresionLogisticaMiniBatch(rate=0.3,rate_decay=True,normalizacion=True)
-        lr_votos2.entrena(X_votos_train, y_votos_train,100)  
-        print("Rendimiento con rate=0.3, rate_decay=True, normalizacion=True y n_epochs=100: ",
-        rendimiento(lr_votos2, normalizar(X_votos_test), y_votos_test))      
-        
-        lr_votos2 = RegresionLogisticaMiniBatch(rate=0.01,rate_decay=True,normalizacion=True)
-        lr_votos2.entrena(X_votos_train, y_votos_train,100)  
-        print("Rendimiento con rate=0.01, rate_decay=True, normalizacion=True y n_epochs=100: ",
-        rendimiento(lr_votos2, normalizar(X_votos_test), y_votos_test))      
-        
-        lr_votos3 = RegresionLogisticaMiniBatch(rate=0.3,rate_decay=False,normalizacion=True)
-        lr_votos3.entrena(X_votos_train, y_votos_train,100)  
-        print("Rendimiento con rate=0.3, rate_decay=False, normalizacion=True y n_epochs=100: "
-        ,rendimiento(lr_votos3, normalizar(X_votos_test), y_votos_test), "\n")
+        print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
+        optimizar_modelo('RegresionMiniBatch',X_votos_train,X_votos_test,y_votos_train,y_votos_test,X_votos_val,y_votos_val,range_rate,[True,False],[100,150,200])
 
-        print("Vemos el rendimiento para el primer modelo con el conjunto de validación: ",
-                rendimiento(lr_votos1, normalizar(X_votos_val), y_votos_val))
-        # Rendimiento:  
 
         print("---------------------------------------------------") 
         print("Test Regresion logistica con datos de IMDB: ejemplo", "\n")
@@ -933,20 +923,21 @@ def main():
         y_digitos_test = cargaClases("digitdata/testlabels")
         X_digitos_val = cargaImágenes("digitdata/validationimages",28,28)
         y_digitos_val = cargaClases("digitdata/validationlabels")
+        #print("Buscamos los hiperparámetros que dan el mejor rendimiento.")
+        #optimizar_modelo('OneVsRest',X_digitos_train,X_digitos_test,y_digitos_train,y_digitos_test,X_digitos_val,y_digitos_val,[0.2,0.4],[100,200],[64])
         # Probamos con distintos valores de los hiperparámetros:
         ovr_digitos = RL_OvR(np.arange(10), rate=0.8, batch_tam=64)
         ovr_digitos.entrena(X_digitos_train, y_digitos_train, n_epochs=100)
         print("Rendimiento con rate=0.8, batch_tam=64 y n_epochs=100:", rendimiento(ovr_digitos, X_digitos_test, y_digitos_test))
         ovr_digitos = RL_OvR(np.arange(10), rate=0.4, batch_tam=64)
-        ovr_digitos.entrena(X_digitos_train, y_digitos_train, n_epochs=400)
-        print("Rendimiento con rate=0.4, batch_tam=64 y n_epochs=400:", rendimiento(ovr_digitos, X_digitos_test, y_digitos_test))
+        ovr_digitos.entrena(X_digitos_train, y_digitos_train, n_epochs=200)
+        print("Rendimiento con rate=0.4, batch_tam=64 y n_epochs=200:", rendimiento(ovr_digitos, X_digitos_test, y_digitos_test))
         ovr_digitos = RL_OvR(np.arange(10), rate=0.2, batch_tam=64)
         ovr_digitos.entrena(X_digitos_train, y_digitos_train, n_epochs=200)
         print("Rendimiento con rate=0.2, batch_tam=64 y n_epochs=200:", rendimiento(ovr_digitos, X_digitos_test, y_digitos_test), "\n")
         print("Vemos el rendimiento para el último modelo con el conjunto de validación: ",
-                rendimiento(ovr_digitos, X_digitos_val, y_digitos_val))
+        rendimiento(ovr_digitos, X_digitos_val, y_digitos_val))
         # Rendimiento: 0.783
-
 
 if __name__ == '__main__':
     main()
