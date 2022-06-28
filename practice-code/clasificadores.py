@@ -326,13 +326,13 @@ def IMDB():
     X_train_imdb = vectorizer.transform(text_train).toarray()
     X_test_imdb =vectorizer.transform(text_test).toarray()
     
-    lr_imdb = RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True,normalizacion=True)
-    lr_imdb.entrena(X_train_imdb, y_imdb_train)
+    lr_imdb = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True,normalizacion=True)
+    lr_imdb.entrena(X_train_imdb, y_imdb_train, n_epochs=100)
     print("Rendimiento con Regresión logística: ",rendimiento(lr_imdb, normalizar(X_test_imdb), y_imdb_test))
     # Rendimiento con Regresión logística: 0.735
 
     nb_imdb = NaiveBayes(k=1)
-    nb_imdb.entrena(X_train_imdb, y_imdb_train)
+    nb_imdb.entrena(X_train_imdb, y_imdb_train, )
     print("Rendimiento con Naive Bayes: ",rendimiento(nb_imdb, X_test_imdb, y_imdb_test))
     # Rendimiento con Naive Bayes: 0.7625
 
